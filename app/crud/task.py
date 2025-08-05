@@ -1,8 +1,7 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import update, delete
+from sqlalchemy import delete
 from ..db.models import Task
-from ..schemas.task import TaskUpdate
 
 
 async def create_task(db: AsyncSession, task_data: dict, project_id: int) -> Task:
@@ -23,10 +22,8 @@ async def get_project_tasks(db: AsyncSession, project_id: int) -> list[Task]:
     return result.scalars().all()
 
 
-async def update_task(db: AsyncSession, task: Task, update_data: TaskUpdate) -> Task:
-    update_dict = update_data.model_dump(exclude_unset=True)
-
-    for key, value in update_dict.items():
+async def update_task(db: AsyncSession, task: Task, update_data: dict) -> Task:
+    for key, value in update_data.items():
         setattr(task, key, value)
 
     await db.commit()

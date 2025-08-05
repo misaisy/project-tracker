@@ -1,8 +1,7 @@
 from enum import Enum
-from pydantic import BaseModel, Field
 from typing import Optional
-from .project import ProjectOut
-from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 
 class TaskStatus(str, Enum):
@@ -34,8 +33,6 @@ class TaskOut(TaskBase):
     """Схема для вывода данных задачи."""
     id: int = Field(..., example=1, description="ID задачи")
     project_id: int = Field(..., example=1, description="ID проекта")
-    created_at: datetime = Field(..., example="2023-01-01T00:00:00", description="Дата создания задачи")
-    project: ProjectOut = Field(..., description="Проект задачи")
 
     class Config:
         from_attributes = True

@@ -9,18 +9,17 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
 
     projects = relationship("Project", back_populates="owner")
-    comments = relationship("Comment", back_populates="author")
 
 class Project(Base):
     """Модель проекта."""
     __tablename__ = 'projects'
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), index=True, nullable=False)
+    name = Column(String, index=True, nullable=False)
     description = Column(Text)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
@@ -39,7 +38,7 @@ class Task(Base):
     __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(100), nullable=False)
+    title = Column(String, nullable=False)
     status = Column(Enum(TaskStatus), default=TaskStatus.TODO, nullable=False)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
@@ -54,7 +53,5 @@ class Comment(Base):
     text = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     task = relationship("Task", back_populates="comments")
-    author = relationship("User", back_populates="comments")

@@ -1,7 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import Optional
-from .user import UserOut
-from datetime import datetime
+
+from pydantic import BaseModel, Field
 
 
 class ProjectBase(BaseModel):
@@ -25,8 +24,6 @@ class ProjectOut(ProjectBase):
     """Схема для вывода данных проекта."""
     id: int = Field(..., example=1, description="ID проекта")
     owner_id: int = Field(..., example=1, description="ID владельца проекта")
-    created_at: datetime = Field(..., example="2023-01-01T00:00:00", description="Дата создания проекта")
-    owner: UserOut = Field(..., description="Владелец проекта")
 
     class Config:
         from_attributes = True
