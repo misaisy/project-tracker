@@ -11,7 +11,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Схема для создания пользователя."""
     password: str = Field(..., min_length=6, example="strongpassword", description="Пароль пользователя")
-
+    is_admin: bool = Field(False)
 
 class UserUpdate(BaseModel):
     """Схема для обновления пользователя."""
@@ -37,3 +37,13 @@ class Token(BaseModel):
     """Схема JWT токена."""
     access_token: str = Field(..., description="JWT токен доступа")
     token_type: str = Field("bearer", description="Тип токена")
+
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
+
+class TokenRefresh(BaseModel):
+    refresh_token: str
+
+class LogoutResponse(BaseModel):
+    message: str

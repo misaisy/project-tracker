@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.session import get_db
-from ..crud.user import get_user_by_email, create_user
-from ..schemas.user import UserCreate, UserLogin, Token, UserOut
-from ..core.security import verify_password, create_access_token, get_password_hash
+from ..crud.user import get_user_by_email, create_user, update_user
+from ..schemas.user import UserCreate, UserLogin, Token, UserOut, LogoutResponse, TokenRefresh, PasswordUpdate
+from ..core.security import verify_password, create_access_token, get_password_hash, revoke_refresh_token, decode_token, \
+    verify_refresh_token
+from ..utils.dependencies import get_current_user
+
 
 router = APIRouter()
 
@@ -47,3 +51,69 @@ async def login(
 
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout", response_model=LogoutResponse)
+async def logout(
+        current_user: UserOut = Depends(get_current_user)
+):
+    """
+    Выход из системы: отзывает refresh токен
+    """
+    revoke_refresh_token(current_user.id)
+    return {"message": "Successfully logged out"}
+
+
+@router.post("/refresh_token", response_model=Token)
+async def refresh_token(
+        token_data: TokenRefresh,
+        db: AsyncSession = Depends(get_db)
+):
+    """
+    Обновление токена доступа с помощью refresh токена
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = decode_token(token_data.refresh_token)
+        email = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = await get_user_by_email(db, email)
+    if user is None or not verify_refresh_token(user.id, token_data.refresh_token):
+        raise credentials_exception
+
+    new_access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": new_access_token, "token_type": "bearer"}
+
+
+@router.post("/update_password", response_model=LogoutResponse)
+async def update_password(
+        password_data: PasswordUpdate,
+        current_user: UserOut = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    """
+    Обновление пароля пользователя
+    """
+    user = await get_user_by_email(db, current_user.email)
+    if not verify_password(password_data.current_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+
+    new_hashed_password = get_password_hash(password_data.new_password)
+
+    await update_user(db, user, {"hashed_password": new_hashed_password})
+
+    revoke_refresh_token(user.id)
+
+    return {"message": "Password updated successfully"}

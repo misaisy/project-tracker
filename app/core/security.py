@@ -1,10 +1,13 @@
 import logging
+import secrets
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from .config import settings
 
 logger = logging.getLogger(__name__)
+
+REFRESH_TOKEN_STORE = {}
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -46,3 +49,20 @@ def decode_token(token: str) -> dict:
     except Exception as e:
         logger.error(f"Token decoding error: {e}")
         return None
+
+def create_refresh_token() -> str:
+    """Создает случайный refresh токен"""
+    return secrets.token_urlsafe(64)
+
+def add_refresh_token(user_id: int, refresh_token: str):
+    """Сохраняет refresh токен"""
+    REFRESH_TOKEN_STORE[user_id] = refresh_token
+
+def verify_refresh_token(user_id: int, refresh_token: str) -> bool:
+    """Проверяет refresh токен"""
+    return REFRESH_TOKEN_STORE.get(user_id) == refresh_token
+
+def revoke_refresh_token(user_id: int):
+    """Отзывает refresh токен"""
+    if user_id in REFRESH_TOKEN_STORE:
+        del REFRESH_TOKEN_STORE[user_id]

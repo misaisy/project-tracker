@@ -1,9 +1,13 @@
 import os
+import sqlite3
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from .base import Base
 from .models import User, Project, Task, Comment
 from ..core.config import settings
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 DATABASE_URL = settings.DATABASE_URL
 
@@ -35,3 +39,10 @@ async def get_db() -> AsyncSession:
             raise
         finally:
             await session.close()
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()

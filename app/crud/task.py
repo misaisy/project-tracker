@@ -1,7 +1,7 @@
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete
-from ..db.models import Task
+from ..db.models import Task, Comment
 
 
 async def create_task(db: AsyncSession, task_data: dict, project_id: int) -> Task:
@@ -32,5 +32,6 @@ async def update_task(db: AsyncSession, task: Task, update_data: dict) -> Task:
 
 
 async def delete_task(db: AsyncSession, task_id: int) -> None:
+    await db.execute(delete(Comment).where(Comment.task_id == task_id))
     await db.execute(delete(Task).where(Task.id == task_id))
     await db.commit()
